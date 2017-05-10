@@ -1,6 +1,6 @@
 from django.conf.urls import url, include
 
-from media import views
+import views
 
 urlpatterns = [
   url(r'^photo/search/$',views.photo_search,name='photo_search'),

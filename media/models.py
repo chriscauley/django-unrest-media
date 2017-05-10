@@ -2,13 +2,13 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.files.storage import FileSystemStorage
+from django.core.urlresolvers import reverse
 from django.db import models
 
 from lablackey.decorators import cached_method, cached_property
-from lablackey.db.models import UserOrSessionMixin
-from lablackey.unrest import JsonMixin
+from lablackey.db.models import UserOrSessionModel
 
-from crop_override import CropOverride, OriginalImage
+from crop_override import CropOverride, OriginalImage, get_override
 from sorl.thumbnail import get_thumbnail
 import os
 
@@ -122,20 +122,23 @@ class TaggedPhoto(models.Model):
   order = models.IntegerField(default=9999)
 
 class PhotosMixin(object):
-  default_photo_id = getattr(settings,"DEFAULT_PHOTO_ID",None)
+  _use_default_photo = True
+  @property
+  def thumbnail(self):
+    try:
+      return get_thumbnail(get_override(self.first_photo,"landscape_crop"),"270x140",crop="center").url
+    except:
+      pass
   @cached_property
   def first_photo(self):
-    try:
-      return self.get_photos()[0]
-    except IndexError:
-      return Photo.objects.get(id=144)
+    return (self.get_photos() or [None])[0]
   @cached_property
   def _ct_id(self):
     return ContentType.objects.get_for_model(self.__class__).id
   @cached_method
   def get_photos(self):
-    if self.default_photo_id:
-      return self._get_photos() or [Photo.objects.get(id=self.default_photo_id)]
+    if getattr(self,"_use_default_photo",False):
+      return self._get_photos() or Photo.objects.filter(id=144)
     return self._get_photos()
   def _get_photos(self):
     return list(Photo.objects.filter(taggedphoto__content_type_id=self._ct_id,
@@ -183,16 +186,15 @@ class TaggedFile(models.Model):
 
 private_storage = FileSystemStorage(
   location=getattr(settings,"PRIVATE_ROOT",settings.MEDIA_ROOT),
-  base_url=getattr(settings,"PRIVATE_URL","/private_file/")
+  base_url=getattr(settings,"PRIVATE_URL","/private_file/"),
 )
 
-class UploadedFile(models.Model,UserOrSessionMixin,JsonMixin):
+class UploadedFile(UserOrSessionModel):
+  private = True
+  user_can_edit = True
   src = models.FileField(storage=private_storage,upload_to="%Y%m",max_length=200,null=True,blank=True)
   name = models.CharField(max_length=256)
   content_type = models.CharField(max_length=256)
   url = property(lambda self: self.src.url)
   __unicode__ = lambda self: self.name
   json_fields = ['id','name','url','content_type']
-  def delete(self,*args,**kwargs):
-    self.src.delete()
-    super(UploadedFile,self).delete(*args,**kwargs)
