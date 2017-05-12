@@ -43,6 +43,8 @@ photo-list {
     color: #666;
     min-height: 200px;
   }
+  .dropzone + photo .fa-arrow-circle-left,
+  photo:last-child .fa-arrow-circle-right { filter: grayscale(1); cursor: default; }
   [data-error] {
     background: #f2dede;
     text-align: center;
@@ -74,18 +76,26 @@ photo {
   position: relative;
   .buttons {
     display: none;
+    flex-wrap: wrap;
     position: absolute;
-    right: 0;
-    top: 0;
-    width: 80px;
     z-index:1;
     .btn {
       box-sizing: border-box;
       display: block;
+    }
+    &.upper {
+      right: 0;
+      top: 0;
+      width: 80px;
+      .btn { width: 100%; }
+    }
+    &.lower {
+      bottom: 36px;
+      justify-content: space-between;
       width: 100%;
     }
   }
-  &:hover .buttons { display: block; }
+  &:hover .buttons { display: flex; }
   &.removed{
     img { opacity: 0.1; }
     &:before {

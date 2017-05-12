@@ -1,14 +1,60 @@
+uR.ready(function() {
+  function dropHandler(e) {
+    e.preventDefault();
+    var tag = this;
+    tag.root.querySelector("photo-list .rows").classList.add("loading");
+
+    var files = e.dataTransfer.files;
+
+    var formData = new FormData();
+    for (var i = 0; i < files.length; i++) {
+      formData.append('file', files[i]);
+    }
+    formData.append('content_type',window._PHOTOS.content_type);
+    formData.append('object_id',window._PHOTOS.object_id);
+    var csrf_token = $('[name=csrfmiddlewaretoken]').val();
+    formData.append('csrfmiddlewaretoken', csrf_token);
+
+    var xhr = new XMLHttpRequest();
+    var post_url = "/media_files/photo/bulk_upload/";
+    xhr.open('POST', post_url);
+    xhr.onload = function () {
+      var i;
+      var text = this.responseText;
+      if (xhr.status === 200) {
+        var new_photos = JSON.parse(xhr.responseText);
+        var i = new_photos.length;
+        uR.forEach(new_photos,function(photo) { window._PHOTOS.photos.push(photo); });
+        tag.update();
+        tag.root.querySelector("photo-list .rows").classList.remove("loading");
+      } else {
+        alert("An unknown error has occurred, go bug Chris");
+      }
+    };
+    // Here's where the form, with photos attached, is actually posted:
+    xhr.send(formData);
+  }
+
+  riot.mount("photo-list",{dropHandler:dropHandler});
+  riot.mount('photo-search',{});
+});
+
 <photo-list>
+  <b>What is the difference between "delete" and "unlink"? Delete removes it from the database. In general only delete if it is a photo you just added and want to replace it with an updated photo</b>
   <div class="rows">
     <div id="dropzone" class="fourth dropzone"></div>
     <photo class="fourth { removed?'removed':'' }" each={ photos } id="__photo_{ id }" if={ !deleted }>
-      <div class="buttons">
+      <div class="buttons upper">
         <button class="btn btn-danger" onclick={ parent.untag } title="Will not delete photo from database"
                 if={ !removed }><i class="fa fa-times"></i> Unlink</button>
         <button class="btn btn-danger" onclick={ parent.delete } title="Will delete from database">
           <i class="fa fa-warning"></i> Delete</button>
         <a class="btn btn-primary" href="/admin/media/photo/{ id }/">
           <i class="fa fa-pencil-square"></i> Edit</a>
+      </div>
+      <div class="buttons lower">
+        <button class="btn btn-warning fa fa-arrow-circle-left" value="-1" onclick={ orderIt }></button>
+        <button class="btn btn-warning fa fa-arrow-circle-right" value="1" onclick={ orderIt }></button>
       </div>
       <img src="{ thumbnail }" if={ thumbnail }/>
       <div data-error={ error } if={ error }></div>
@@ -20,15 +66,17 @@
   var self = this;
   var edit_timeout;
   this.on("mount",function() {
-    $("#dropzone").bind("dragenter", function(e) {
+    var dz = this.root.querySelector("#dropzone");
+    dz.addEventListener("dragenter", function(e) {
       e.preventDefault();
-      $(e.target).addClass("hover");
-    }).bind("dragleave", function(e) {
+      e.target.classList.remove("hover");
+    })
+    dz.addEventListener("dragleave", function(e) {
       e.preventDefault();
-      $(e.target).removeClass("hover");
-    }).bind("dragover", function(e) {
-      e.preventDefault();
-    }).bind("drop", opts.dropHandler);
+      e.target.classList.remove("hover");
+    })
+    dz.addEventListener("dragover", function(e) { e.preventDefault(); });
+    dz.addEventListener("drop", opts.dropHandler.bind(this));
   });
   this.editName = uR.debounce(function(e) {
     uR.ajax({
@@ -65,6 +113,20 @@
         success: function(data) { e.item.deleted = true; }
       });
     }
+  }
+  orderIt(e) {
+    this.ajax({
+      url: '/media_files/photo/order/',
+      method: "POST",
+      data: {
+        move: e.target.value,
+        content_type:window._PHOTOS.content_type,
+        object_id:window._PHOTOS.object_id,
+        photo_id: e.item.id
+      },
+      target: this.root,
+      success: function(data) { this.photos = data.photos; this.update },
+    });
   }
 </photo-list>
 
