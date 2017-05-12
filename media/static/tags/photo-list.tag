@@ -1,7 +1,7 @@
 <photo-list>
   <div class="rows">
     <div id="dropzone" class="fourth dropzone"></div>
-    <photo class="fourth { removed?'removed':''; }" each={ photos } id="__photo_{ id }" if={ !deleted }>
+    <photo class="fourth { removed?'removed':'' }" each={ photos } id="__photo_{ id }" if={ !deleted }>
       <div class="buttons">
         <button class="btn btn-danger" onclick={ parent.untag } title="Will not delete photo from database"
                 if={ !removed }><i class="fa fa-times"></i> Unlink</button>
@@ -37,7 +37,7 @@
       target: self.root.querySelector("#__photo_"+e.item.id),
       loading_attribute: "background-spinner",
     });
-  },200)
+  },200);
 
   untag(e) {
     uR.ajax({
@@ -63,7 +63,7 @@
         that: self,
         target: self.root.querySelector("#__photo_"+e.item.id),
         success: function(data) { e.item.deleted = true; }
-      })
+      });
     }
   }
 </photo-list>
