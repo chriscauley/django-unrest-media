@@ -120,6 +120,12 @@ class TaggedPhoto(models.Model):
   object_id = models.IntegerField()
   content_object = GenericForeignKey('content_type', 'object_id')
   order = models.IntegerField(default=9999)
+  def save(self,*args,**kwargs):
+    if self.order == 9999:
+      self.order = self.__class__.objects.filter(content_type=self.content_type,object_id=self.object_id).count()
+    super(TaggedPhoto,self).save(*args,**kwargs)
+  class Meta:
+    ordering = ("order",)
 
 class PhotosMixin(object):
   _use_default_photo = True

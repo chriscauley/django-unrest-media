@@ -13,6 +13,7 @@ urlpatterns = [
   url(r'^photo/untag/$',views.untag_photo,name='untag_photo'),
   url(r'^photo/delete/(\d+)/$',views.delete_photo,name='delete_photo'),
   url(r'^photo/edit/(\d+)/$',views.edit_photo,name='edit_photo'),
+  url(r'^photo/order/$',views.order,name='photo_order'),
   url(r'^private/$',views.post_file,name="post_private_file"),
   url(r'^private/(.*)',views.private_file,name='private_file'),
 ]

@@ -144,16 +144,6 @@ def bulk_photo_upload(request):
 
 @csrf_exempt
 @staff_member_required
-def untag_photo(request):
-  natural_key = request.POST.get('content_type').split('.')
-  content_type = ContentType.objects.get_by_natural_key(*natural_key)
-  TaggedPhoto.objects.filter(content_type=content_type,
-                          object_id=request.POST['object_id'],
-                          photo__id=request.POST['photo_id']).delete()
-  return HttpResponse('')
-
-@csrf_exempt
-@staff_member_required
 def delete_photo(request,pk):
   Photo.objects.filter(pk=pk).delete()
   return HttpResponse('')
@@ -165,6 +155,40 @@ def edit_photo(request,pk):
   photo.name = request.POST['name'].replace('\n','').strip()
   photo.save()
   return HttpResponse('')
+
+@csrf_exempt
+@staff_member_required
+def untag_photo(request):
+  natural_key = request.POST.get('content_type').split('.')
+  content_type = ContentType.objects.get_by_natural_key(*natural_key)
+  TaggedPhoto.objects.filter(content_type=content_type,
+                          object_id=request.POST['object_id'],
+                          photo__id=request.POST['photo_id']).delete()
+  return HttpResponse('')
+
+@staff_member_required
+def order(request):
+  natural_key = request.POST.get('content_type').split('.')
+  content_type = ContentType.objects.get_by_natural_key(*natural_key)
+  tp = TaggedPhoto.objects.get(content_type=content_type,
+                               object_id=request.POST['object_id'],
+                               photo__id=request.POST['photo_id'])
+  if request.POST['move'] == "-1":
+    sibling = list(TaggedPhoto.objects.filter(
+      content_type=content_type,
+      object_id=request.POST['object_id'],
+      order__lt=tp.order
+    ))[-1]
+  else:
+    sibling = TaggedPhoto.objects.filter(
+      content_type=content_type,
+      object_id=request.POST['object_id'],
+      order__gt=tp.order
+    )[0]
+  sibling.order,tp.order = tp.order,sibling.order
+  sibling.save()
+  tp.save()
+  return JsonResponse({'photos': [p.as_json for p in tp.content_object._get_photos()]})
 
 def post_file(request):
   f = request.FILES['file']
