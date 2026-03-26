@@ -2,7 +2,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.files.storage import FileSystemStorage
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import models
 
 from lablackey.decorators import cached_method, cached_property
@@ -16,9 +16,9 @@ class FileModel(models.Model):
   """An abstract file model. Needs a file field which will be a models.FileField"""
   filename = models.CharField(max_length=200,editable=False)
   name = models.CharField(null=True,blank=True,max_length=500)
-  user = models.ForeignKey(settings.AUTH_USER_MODEL,null=True,blank=True)
+  user = models.ForeignKey(settings.AUTH_USER_MODEL,null=True,blank=True,on_delete=models.SET_NULL)
   upload_dt = models.DateTimeField(auto_now_add=True)
-  __unicode__ = lambda self: self.name or self.filename
+  __str__ = lambda self: self.name or self.filename
 
   def type(self):
     ext = os.path.splitext(self.filename)[1].lower()
@@ -72,7 +72,7 @@ EXTERNAL_TYPE_CHOICES = (
 
 class PhotoTag(models.Model):
   name = models.CharField(max_length=32)
-  __unicode__ = lambda self: self.name
+  __str__ = lambda self: self.name
   class Meta:
     ordering = ('-name',)
 
@@ -115,8 +115,8 @@ class Photo(FileModel):
     ordering = ('name',)
 
 class TaggedPhoto(models.Model):
-  photo = models.ForeignKey(Photo)
-  content_type = models.ForeignKey("contenttypes.ContentType")
+  photo = models.ForeignKey(Photo, on_delete=models.CASCADE)
+  content_type = models.ForeignKey("contenttypes.ContentType", on_delete=models.CASCADE)
   object_id = models.IntegerField()
   content_object = GenericForeignKey('content_type', 'object_id')
   order = models.IntegerField(default=9999)
@@ -182,8 +182,8 @@ class FilesMixin(object):
     abstract = True
 
 class TaggedFile(models.Model):
-  file = models.ForeignKey(MiscFile)
-  content_type = models.ForeignKey("contenttypes.ContentType")
+  file = models.ForeignKey(MiscFile, on_delete=models.CASCADE)
+  content_type = models.ForeignKey("contenttypes.ContentType", on_delete=models.CASCADE)
   object_id = models.IntegerField()
   content_object = GenericForeignKey('content_type', 'object_id')
   order = models.IntegerField(default=9999)
@@ -202,5 +202,5 @@ class UploadedFile(UserOrSessionModel):
   name = models.CharField(max_length=256)
   content_type = models.CharField(max_length=256)
   url = property(lambda self: self.src.url)
-  __unicode__ = lambda self: self.name
+  __str__ = lambda self: self.name
   json_fields = ['id','name','url','content_type']

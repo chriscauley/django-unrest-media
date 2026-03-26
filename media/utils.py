@@ -3,7 +3,7 @@ import os, datetime
 
 from subprocess import Popen, PIPE
 
-from models import Photo
+from .models import Photo
 
 def photos_from_zip(path,approved=True,user=None):
     """turn a zip file into a photos"""
@@ -29,7 +29,7 @@ def photos_from_zip(path,approved=True,user=None):
         os.rmdir(f)
     files = [f for f in os.listdir(directory) if not os.path.isdir(f)]
     for f_path in files:
-        print "creating photo!"
+        print("creating photo!")
         photo = Photo(
             file = os.path.join(directory,f_path).split(settings.MEDIA_ROOT)[-1],
             source = "misc",

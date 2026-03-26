@@ -4,6 +4,7 @@ from django.contrib.contenttypes.admin import GenericTabularInline
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
+from django.utils.html import format_html
 
 from crop_override.admin import CropAdmin
 from sorl.thumbnail import get_thumbnail
@@ -16,8 +17,8 @@ import json
 
 class PhotoAdmin(RawMixin,CropAdmin):
   form = StaffMemberForm
-  list_display = ('__unicode__','_thumbnail','approved','upload_dt')
-  list_sortable = ('__unicode__','upload_dt')
+  list_display = ('__str__','_thumbnail','approved','upload_dt')
+  list_sortable = ('__str__','upload_dt')
   list_editable = ('approved',)
   list_filter = ('upload_dt','tags',)
   search_fields = ('name',)
@@ -28,9 +29,7 @@ class PhotoAdmin(RawMixin,CropAdmin):
     )
   def _thumbnail(self,obj):
     im = get_thumbnail(obj.file,'100x100',crop='center')
-    out = '<img src="%s" width="%s" height="%s" />'%(im.url,im.width,im.height)
-    return out
-  _thumbnail.allow_tags=True
+    return format_html('<img src="{}" width="{}" height="{}" />',im.url,im.width,im.height)
 
 class TaggedPhotoAdmin(admin.ModelAdmin):
   def get_fields(self,request,obj=None):
@@ -51,8 +50,7 @@ class TaggedPhotoAdmin(admin.ModelAdmin):
       'obj': obj,
       'STATIC_URL':settings.STATIC_URL
     }
-    return render_to_string('photo/dropphoto.html',values)
-  dropphoto.allow_tags = True
+    return format_html(render_to_string('photo/dropphoto.html',values))
 
 class TaggedPhotoInline(RawMixin,GenericTabularInline):
   model = TaggedPhoto
@@ -62,9 +60,7 @@ class TaggedPhotoInline(RawMixin,GenericTabularInline):
   extra = 0
   def _thumbnail(self,obj):
     im = get_thumbnail(obj.photo.file,'100x100',crop='center')
-    out = '<img src="%s" width="%s" height="%s" />'%(im.url,im.width,im.height)
-    return out
-  _thumbnail.allow_tags=True
+    return format_html('<img src="{}" width="{}" height="{}" />',im.url,im.width,im.height)
 
 
 class TaggedFileInline(RawMixin,GenericTabularInline):
@@ -73,9 +69,9 @@ class TaggedFileInline(RawMixin,GenericTabularInline):
   extra = 0
 
 class PhotoTagAdmin(admin.ModelAdmin):
-  list_display = ("__unicode__","bulk_link")
-  bulk_link = lambda self, obj: "<a href='/media_files/photo/bulk_tag/%s'>Bulk Tag %s Photos</a>"%(obj.id,obj)
-  bulk_link.allow_tags = True
+  list_display = ("__str__","bulk_link")
+  def bulk_link(self, obj):
+    return format_html('<a href="/media_files/photo/bulk_tag/{}">Bulk Tag {} Photos</a>',obj.id,obj)
 
 class MiscFileAdmin(admin.ModelAdmin):
   form = StaffMemberForm

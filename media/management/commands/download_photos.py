@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.mail import mail_admins, send_mail
 from django.core.management.base import BaseCommand, CommandError
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from media.models import Photo
 from membership.utils import user_from_email
@@ -89,7 +89,7 @@ class Command(BaseCommand):
     for addr,count in user_photos.items():
       if not user_from_email(user):
         pass #!
-      print addr
+      print(addr)
       if True:
         raise NotImplimentedError('need to create modify photos view')
       send_mail(
